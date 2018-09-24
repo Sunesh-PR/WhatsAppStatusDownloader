@@ -13,7 +13,7 @@ class helpActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_help)
         adapter = helpAdapter(supportFragmentManager)
         view_pager.adapter = adapter
     }
