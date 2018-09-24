@@ -1,7 +1,11 @@
 package com.example.sunesh.whatsappstatusdownloader.Controller
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -14,76 +18,49 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import com.example.sunesh.whatsappstatusdownloader.Adapter.adapterClass
 import com.example.sunesh.whatsappstatusdownloader.R
+import com.example.sunesh.whatsappstatusdownloader.Utilities.source
 import java.util.*
+import kotlin.collections.ArrayList
+import android.os.StrictMode
+import com.example.sunesh.whatsappstatusdownloader.Downloads.downloads
+import com.example.sunesh.whatsappstatusdownloader.Utilities.destination
+import es.dmoral.toasty.Toasty
+
+private var permissionState = true
+
 
 class MainActivity : AppCompatActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        if (ContextCompat.checkSelfPermission(this,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
 
 
 
-            // No explanation needed, we can request the permission.
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    100)
-        }
-        if (ContextCompat.checkSelfPermission(this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    101)
-    }
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
 
 
-         fun onRequestPermissionsResult(requestCode: Int,
-                                                permissions: Array<String>, grantResults: IntArray) {
-            when (requestCode) {
-                100 -> {
-                    // If request is cancelled, the result arrays are empty.
-                    if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                        // permission was granted, yay! Do the
-                        // contacts-related task you need to do.
-                        Toast.makeText(this,"Granted",Toast.LENGTH_SHORT).show()
-                    } else {
-                        // permission denied, boo! Disable the
-                        // functionality that depends on this permission.
-                        Toast.makeText(this,"Not Granted",Toast.LENGTH_SHORT).show()
-                    }
-                    return
-                }
-                101 -> {
-                    // If request is cancelled, the result arrays are empty.
-                    if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                        // permission was granted, yay! Do the
-                        // contacts-related task you need to do.
-                        Toast.makeText(this,"Granted",Toast.LENGTH_SHORT).show()
-                    } else {
-                        // permission denied, boo! Disable the
-                        // functionality that depends on this permission.
-                        Toast.makeText(this,"Not Granted",Toast.LENGTH_SHORT).show()
-                    }
-                    return
-                }
 
-                // Add other 'when' lines to check for other
-                // permissions this app might request.
-                else -> {
-                    // Ignore all other requests.
-                }
-            }
-        }
+//        if (ContextCompat.checkSelfPermission(this,
+//                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//                != PackageManager.PERMISSION_GRANTED) {
+//
+//
+//
+//            // No explanation needed, we can request the permission.
+//            ActivityCompat.requestPermissions(this,
+//                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+//                    100)
+//        }
+//
+//
+//
+//
+//
+//
+//
         if (ContextCompat.checkSelfPermission(this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED&&ContextCompat.checkSelfPermission(this,
@@ -91,14 +68,17 @@ class MainActivity : AppCompatActivity() {
                 == PackageManager.PERMISSION_GRANTED){
 
 
-            val path = Environment.getExternalStorageDirectory().absolutePath+"/WhatsApp/Media/.Statuses"
+
+
+            val path = Environment.getExternalStorageDirectory().absolutePath+ source
             try {
-                val f= File(path)
-                var filesarray: ArrayList<File>? = null
-                val files= f.listFiles()
 
 
-                val adapter = adapterClass(this,files)
+                val sortedfiles= allfilesorted(path)
+
+
+
+                val adapter = adapterClass(this,sortedfiles)
                 rcyrview.adapter= adapter
                 val layoutManager = LinearLayoutManager(this)
                 rcyrview.layoutManager = layoutManager
@@ -112,9 +92,62 @@ class MainActivity : AppCompatActivity() {
             }
 
 
+        }else{
+            srl.isEnabled = false
+            permission.visibility= View.VISIBLE
+            permissionText.visibility=View.VISIBLE
+        }
+        permission.setOnClickListener {
+            startActivity(Intent(this,splashActivity::class.java))
+        }
+        val builder = StrictMode.VmPolicy.Builder()
+        StrictMode.setVmPolicy(builder.build())
+        rcyrview.isNestedScrollingEnabled=false
+
+        srl.setOnRefreshListener {
+            if (permissionState==true) {
+                val files = allfilesorted(Environment.getExternalStorageDirectory().absolutePath + source)
+                val adapter = adapterClass(this, files)
+                rcyrview.adapter = adapter
+                srl.setRefreshing(false);
+            }
+
+        }
+
+        downloadsbtn.setOnClickListener{
+            val file = File(Environment.getExternalStorageDirectory().absolutePath+ destination)
+            val list = file.listFiles()
+            if(list.count()==0){
+                Toasty.error(this,"No downloads found!!",Toast.LENGTH_LONG).show()
+            }else{
+                val intent = Intent(this,downloads::class.java)
+                intent.putExtra("files",list)
+                startActivity(intent)
+
+            }
+
+
+
         }
 
     }
+
+
+}
+
+fun allfilesorted(path: String): Array<File>{
+    val f= File(path)
+    val files =f.listFiles()
+    for (i in 0 until  files.count()-1) {
+        for (j in 0 until (files.count() - i - 1)) {
+            if (files[j].lastModified() < files[j + 1].lastModified()) {
+                files[j] = files[j + 1].also { files[j + 1] = files[j] }
+            }
+
+        }
+    }
+    return  files
+
 }
 
 
