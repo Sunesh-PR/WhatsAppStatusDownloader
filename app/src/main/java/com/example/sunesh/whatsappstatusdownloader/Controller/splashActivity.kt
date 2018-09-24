@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
+import com.example.sunesh.whatsappstatusdownloader.HelpPackage.helpActivity
 import com.example.sunesh.whatsappstatusdownloader.R
 
 private const val PERMISSION_REQUEST = 10
@@ -23,7 +24,7 @@ class splashActivity : AppCompatActivity() {
     internal val mRunnable: Runnable = Runnable {
         if (!isFinishing) {
 
-            val intent = Intent(this, MainActivity::class.java)
+            val intent = Intent(this, helpActivity::class.java)
             startActivity(intent)
             finish()
         }
